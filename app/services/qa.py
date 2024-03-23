@@ -1,22 +1,18 @@
-# import enum
-from uuid import UUID, uuid4
-from datetime import datetime
 from typing import Optional
 
+# import time
+from uuid import UUID  # , uuid4
 
-class Answer:
-    def __init__(self, message: str, file: Optional[str] = None) -> None:
-        self.message = message
-        self.file = file
-
-    def __str__(self):
-        return self.message
+# from datetime import datetime
+from app.models import Answer, Stats
 
 
-class App:
+class QAService:
+    _QA: dict[str, Answer]
+
     def __init__(self) -> None:
         self._QA = {"Привет": Answer("Привет и тебе"), "test": Answer("test test")}
-        self._stats = {
+        self._stats: Stats = {
             "qa_frequency": {},
             "users_questions": {},
         }
@@ -29,7 +25,7 @@ class App:
         self._QA[question] = Answer(answer_message, answer_file)
         return True
 
-    def get_answer(self, question: str, user_id: str = "test user") -> Answer:
+    def get_answer(self, question: str, user_id: UUID = "test") -> Answer:
         if question in self._QA:
             answer = self._QA[question]
             self._stats["qa_frequency"][question] = (
@@ -64,11 +60,3 @@ class App:
                 file.write(f"{user}: {questions}\n")
 
         return self._stats["users_questions"]
-
-
-app = App()
-print(app.get_answer("Привет"))
-print(app.get_answer("Привет", "uisdhds232"))
-print(app.get_answer("test"))
-print(app.get_most_frequent_questions())
-print(app.get_questions_by_users())
