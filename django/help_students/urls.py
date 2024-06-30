@@ -16,15 +16,31 @@ Including another URLconf
 """
 
 from django.urls import path
-from app.views import AppViewSet
+
+from django.app.views import (
+    AddQAView,
+    GetAnswerView,
+    MostFrequentQuestionsView,
+    GetQuestionsByUsersView,
+    GetAllQAView,
+    OperationView,
+)
 
 urlpatterns = [
+    path("all_qa/", GetAllQAView.as_view(), name="all_qa"),
+    path("add_qa/", AddQAView.as_view(), name="add_qa"),
+    path("get_answer/", GetAnswerView.as_view(), name="get_answer"),
     path(
-        "qa/",
-        AppViewSet.as_view({"get": "list", "post": "create"}),
-        name="apps_list_ops",
+        "stats/most_frequent/",
+        MostFrequentQuestionsView.as_view(),
+        name="most_frequent_questions",
     ),
-    path("qa/<uuid:id>", AppViewSet.as_view({"get": "get_one"})),
+    path(
+        "stats/user_questions/",
+        GetQuestionsByUsersView.as_view(),
+        name="user_questions",
+    ),
+    path("operation/", OperationView.as_view(), name="operation"),
 ]
 
 # Path: /api/qa

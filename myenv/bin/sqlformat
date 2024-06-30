@@ -1,4 +1,4 @@
-#!/home/ilyamed/git/vuz/6_cicd/venv/bin/python3
+#!/Users/ilyamedvedev/git/6_cicd/myenv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -1,0 +1,5 @@
+# djangorestframework
+# django-compact
+# drf-spectacular
+# django-rest-enumfield
+# django-cors-headers

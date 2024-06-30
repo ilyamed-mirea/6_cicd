@@ -1,10 +1,14 @@
-from typing import Optional
+from typing import Optional, TypedDict
 
 # import time
-from uuid import UUID  # , uuid4
+from uuid import UUID, uuid4
 
 # from datetime import datetime
-from app.models import Answer, Stats
+from app.models import Answer
+
+Stats = TypedDict(
+    "Stats", {"qa_frequency": list[str], "users_questions": dict[UUID, list[str]]}
+)
 
 
 class QAService:
@@ -17,12 +21,19 @@ class QAService:
             "users_questions": {},
         }
 
+    def get_all_QA(self):
+        return self._QA
+
     def add_QA(
-        self, question: str, answer_message: str, answer_file: Optional[str] = None
+        self,
+        question: str,
+        answer_message: str,
+        answer_file: Optional[str] = None,
+        answer_status: Optional[str] = None,
     ) -> bool:
         if question in self._QA:
             return False
-        self._QA[question] = Answer(answer_message, answer_file)
+        self._QA[question] = Answer(answer_message, answer_file, answer_status)
         return True
 
     def get_answer(self, question: str, user_id: UUID = "test") -> Answer:
@@ -38,6 +49,7 @@ class QAService:
             self._stats["users_questions"][user_id] = user_question_set
             return answer
         else:
+            # raise Exception("Произошла ошибка при получении ответа!")
             return "Произошла ошибка!"
 
     def get_most_frequent_questions(self, return_count: int = 10):
