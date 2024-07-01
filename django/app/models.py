@@ -1,6 +1,8 @@
 from uuid import UUID, uuid4
 from enum import Enum
 from datetime import datetime
+import uuid
+from django.db import models
 
 
 class AnswerStatuses(Enum):
@@ -29,11 +31,10 @@ class Answer:
         self.status = status
 
 
-class Operation:
-    id: UUID
-    done: bool
-
-    def __init__(self, id: UUID, done: bool = False, result=None) -> None:
-        self.id = id
-        self.done = done
-        self.result = result
+class Operation(models.Model):
+    def __init__(self, id: UUID, result: bool = False) -> None:
+        self.id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        self.created_at = models.DateTimeField(auto_now_add=True)
+        self.updated_at = models.DateTimeField(auto_now=True)
+        self.completed = models.BooleanField(default=False)
+        self.result = models.TextField(null=True, blank=True)

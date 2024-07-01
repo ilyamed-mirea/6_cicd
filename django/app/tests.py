@@ -2,8 +2,8 @@ from uuid import uuid4
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
-from app.models import AnswerStatuses
-from app.services import QAService
+from .models import AnswerStatuses, Operation
+from .services import QAService
 
 client = APIClient()
 
@@ -78,3 +78,35 @@ class QuestionAnswerTestCase(APITestCase):
         response = client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(any(qa["question"] == self.question for qa in response.data))
+
+
+class OperationTests(APITestCase):
+    def test_create_operation(self):
+        url = reverse("create_operation")
+        response = client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue("id" in response.data)
+
+    def test_complete_operation(self):
+        operation = Operation.objects.create()
+        url = reverse("complete_operation", args=[operation.id])
+        data = {"result": "Operation completed successfully"}
+        response = client.post(url, data=data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["completed"])
+        self.assertEqual(response.data["result"], "Operation completed successfully")
+
+    def test_finish_operation(self):
+        operation = Operation.objects.create()
+        url = reverse("finish_operation", args=[operation.id])
+        response = client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["completed"])
+        self.assertIsNone(response.data["result"])
+
+    def test_get_operation_info(self):
+        operation = Operation.objects.create()
+        url = reverse("get_operation_info", args=[operation.id])
+        response = client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], str(operation.id))

@@ -1,11 +1,10 @@
-from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from rest_framework.exceptions import ValidationError
-from .services.qa import QAService
 
+from .services.qa import QAService
+from .services.operations import OperationsService
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status
-from rest_framework.views import APIView
 
 from .models import AnswerStatuses
 from .serializers import (
@@ -19,7 +18,14 @@ from .serializers import (
 qa_service = QAService()
 
 
-class GetAllQAView(APIView):
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить все вопросы и ответы",
+        description="Возвращает все вопросы и ответы в базе данных.",
+        responses={200: "application/json"},
+    )
+)
+class GetAllQAView(ViewSet):
     def get(self, request):
         qa_data = qa_service.get_all_qa()
         serialized_data = [
@@ -29,7 +35,18 @@ class GetAllQAView(APIView):
         return Response(serialized_data)
 
 
-class AddQAView(APIView):
+@extend_schema_view(
+    post=extend_schema(
+        summary="Добавить новый вопрос и ответ",
+        description="Добавляет новый вопрос и ответ в базу данных.",
+        request=AddQASerializer,
+        responses={
+            201: "application/json",
+            400: "application/json",
+        },
+    )
+)
+class AddQAView(ViewSet):
     def post(self, request):
         serializer = AddQASerializer(data=request.data)
         if serializer.is_valid():
@@ -53,7 +70,19 @@ class AddQAView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GetAnswerView(APIView):
+@extend_schema_view(
+    post=extend_schema(
+        summary="Получить ответ на вопрос",
+        description="Возвращает ответ на заданный вопрос для конкретного пользователя.",
+        request=GetAnswerSerializer,
+        responses={
+            200: "application/json",
+            404: "application/json",
+            400: "application/json",
+        },
+    )
+)
+class GetAnswerView(ViewSet):
     def post(self, request):
         serializer = GetAnswerSerializer(data=request.data)
         if serializer.is_valid():
@@ -76,7 +105,14 @@ class GetAnswerView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class MostFrequentQuestionsView(APIView):
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить наиболее часто задаваемые вопросы",
+        description="Возвращает наиболее часто задаваемые вопросы.",
+        responses={200: "application/json"},
+    )
+)
+class MostFrequentQuestionsView(ViewSet):
     def get(self, request):
         serializer = MostFrequentQuestionsSerializer(data=request.query_params)
         if serializer.is_valid():
@@ -86,7 +122,14 @@ class MostFrequentQuestionsView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GetQuestionsByUsersView(APIView):
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить вопросы по пользователям",
+        description="Возвращает вопросы, заданные пользователями в заданном файле.",
+        responses={200: "application/json"},
+    )
+)
+class GetQuestionsByUsersView(ViewSet):
     def get(self, request):
         serializer = GetQuestionsByUsersSerializer(data=request.query_params)
         if serializer.is_valid():
@@ -96,15 +139,99 @@ class GetQuestionsByUsersView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OperationView(APIView):
+operation_service = OperationsService()
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Создание новой операции",
+        description="Создает новую операцию и возвращает ее данные.",
+        responses={201: OperationSerializer},
+    )
+)
+class CreateOperationView(ViewSet):
     def post(self, request):
-        serializer = OperationSerializer(data=request.data)
-        if serializer.is_valid():
-            # Here you would tie this into a real operation
-            validated_data = serializer.validated_data
-            # Simulate operation result
-            operation = serializer.create(validated_data)
-            return Response(
-                {"id": operation.id, "done": operation.done, "result": operation.result}
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        operation = operation_service.create_operation()
+        serializer = OperationSerializer(operation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Завершение операции",
+        description="Завершает указанную операцию с предоставленным результатом.",
+        request={"result": "string"},
+        responses={
+            200: OperationSerializer,
+            404: "application/json",
+        },
+    )
+)
+class CompleteOperationView(ViewSet):
+    def post(self, request, operation_id):
+        result = request.data.get("result", "")
+        operation = operation_service.complete_operation(operation_id, result)
+        if operation:
+            serializer = OperationSerializer(operation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Operation not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Завершение операции без результата",
+        description="Завершает указанную операцию без предоставления результата.",
+        responses={
+            200: OperationSerializer,
+            404: "application/json",
+        },
+    )
+)
+class FinishOperationView(ViewSet):
+    def post(self, request, operation_id):
+        operation = operation_service.finish_operation(operation_id)
+        if operation:
+            serializer = OperationSerializer(operation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Operation not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить информацию об операции",
+        description="Возвращает информацию о конкретной операции.",
+        responses={
+            200: OperationSerializer,
+            404: "application/json",
+        },
+    )
+)
+class GetOperationInfoView(ViewSet):
+    def get(self, request, operation_id):
+        operation = operation_service.get_operation_info(operation_id)
+        if operation:
+            serializer = OperationSerializer(operation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Operation not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        summary="Экспорт данных",
+        description="Запускает процесс экспорта данных.",
+        responses={
+            201: OperationSerializer,
+        },
+    )
+)
+class ExportDataView(ViewSet):
+    def post(self, request):
+        operation = qa_service.export_data()
+        serializer = OperationSerializer(operation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -16,14 +16,18 @@ Including another URLconf
 """
 
 from django.urls import path
-
-from django.app.views import (
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from app.views import (
     AddQAView,
+    CompleteOperationView,
+    CreateOperationView,
+    ExportDataView,
+    FinishOperationView,
     GetAnswerView,
+    GetOperationInfoView,
     MostFrequentQuestionsView,
     GetQuestionsByUsersView,
     GetAllQAView,
-    OperationView,
 )
 
 urlpatterns = [
@@ -40,7 +44,25 @@ urlpatterns = [
         GetQuestionsByUsersView.as_view(),
         name="user_questions",
     ),
-    path("operation/", OperationView.as_view(), name="operation"),
+    path("operations/", CreateOperationView.as_view(), name="create_operation"),
+    path(
+        "operations/<uuid:operation_id>/complete/",
+        CompleteOperationView.as_view(),
+        name="complete_operation",
+    ),
+    path(
+        "operations/<uuid:operation_id>/finish/",
+        FinishOperationView.as_view(),
+        name="finish_operation",
+    ),
+    path(
+        "operations/<uuid:operation_id>/",
+        GetOperationInfoView.as_view(),
+        name="get_operation_info",
+    ),
+    path("operations/export_data/", ExportDataView.as_view(), name="export_data"),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
 ]
 
 # Path: /api/qa

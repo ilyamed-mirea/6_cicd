@@ -1,6 +1,6 @@
 from rest_enumfield import EnumField
 from rest_framework import serializers
-from app.models import Answer, AnswerStatuses
+from .models import Answer, AnswerStatuses, Operation
 
 
 class AnswerSerializer(serializers.Serializer):
@@ -19,7 +19,7 @@ class QuestionAnswerSerializer(serializers.Serializer):
 class AddQASerializer(serializers.Serializer):
     question = serializers.CharField()
     answer_message = serializers.CharField()
-    answer_file = serializers.FilePathField(match=r"\.(gif|jpe?g|png)$", required=False)
+    answer_file = serializers.FilePathField(required=False)
     answer_status = EnumField(choices=AnswerStatuses)
 
     def create(self, validated_data):
@@ -44,12 +44,7 @@ class GetQuestionsByUsersSerializer(serializers.Serializer):
     filename = serializers.CharField()
 
 
-class OperationDoneSerializer(serializers.Serializer):
-    id = serializers.UUIDField()
-    done = serializers.BooleanField()
-    result = serializers.CharField()
-
-
-class OperationNotDoneSerializer(serializers.Serializer):
-    id = serializers.UUIDField()
-    done = serializers.BooleanField()
+class OperationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Operation
+        fields = ["id", "created_at", "updated_at", "completed", "result"]
