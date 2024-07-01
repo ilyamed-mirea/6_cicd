@@ -1,7 +1,7 @@
 stages:
     - test
     - build
-    # - deploy
+    - deploy
 
 run-tests:
     stage: test
@@ -25,19 +25,19 @@ build-prod-image:
     paths:
      - "help_students.tar"
 
-# push-to-dockerhub:
-#   stage: deploy
-#   image: docker:dind
-#   before_script:
-#     - docker load --input help_students.tar
-#     - docker login -u $DH_USERNAME -p $DH_PASSWORD
-#   script:
-#     - docker tag help_students:latest $DH_USERNAME/help_students:latest
-#     - docker tag help_students:latest $DH_USERNAME/help_students:$CI_PIPELINE_IID
-#     - docker push $DH_USERNAME/help_students:latest
-#     - docker push $DH_USERNAME/help_students:$CI_PIPELINE_IID
-#   needs:
-#     - build-prod-image
+push-to-dockerhub:
+  stage: deploy
+  image: docker:dind
+  before_script:
+    - docker load --input help_students.tar
+    - docker login -u $DH_USERNAME -p $DH_PASSWORD
+  script:
+    - docker tag help_students:latest $DH_USERNAME/help_students:latest
+    - docker tag help_students:latest $DH_USERNAME/help_students:$CI_PIPELINE_IID
+    - docker push $DH_USERNAME/help_students:latest
+    - docker push $DH_USERNAME/help_students:$CI_PIPELINE_IID
+  needs:
+    - build-prod-image
 
 # push-to-yandex-registry:
 #   stage: deploy
