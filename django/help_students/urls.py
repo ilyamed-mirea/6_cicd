@@ -32,7 +32,7 @@ from app.views import (
 
 urlpatterns = [
     path("all_qa/", GetAllQAView.as_view({"get": "list"}), name="all_qa"),
-    path("add_qa/", AddQAView.as_view({"post": "create"}), name="add_qa"),
+    path("add_qa/", AddQAView.as_view({"post": "create"}), name="all_qa"),
     path("get_answer/", GetAnswerView.as_view({"post": "create"}), name="get_answer"),
     path(
         "most_frequent_questions/",

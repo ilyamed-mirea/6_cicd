@@ -18,10 +18,11 @@ Stats = TypedDict(
 
 class QAService:
     _QA: dict[str, Answer]
+    _stats: Stats
 
     def __init__(self) -> None:
         self._QA = {"Привет": Answer("Привет и тебе"), "test": Answer("test test")}
-        self._stats: Stats = {
+        self._stats = {
             "qa_frequency": {},
             "users_questions": {},
         }

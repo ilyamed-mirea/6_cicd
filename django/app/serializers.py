@@ -42,7 +42,7 @@ class GetQuestionsByUsersSerializer(serializers.Serializer):
     filename = serializers.CharField()
 
 
-class OperationSerializer(serializers.Serializer):
+class OperationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Operation
         fields = ["id", "created_at", "updated_at", "completed", "result"]

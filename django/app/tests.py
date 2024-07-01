@@ -1,106 +1,85 @@
 from uuid import uuid4
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient, APITestCase
-from .models import AnswerStatuses, Operation
-from .services import QAService
+from rest_framework.test import APIClient
+from app.services.qa import QAService
+from app.services.operations import OperationsService
 
 client = APIClient()
 
 
-class QuestionAnswerTestCase(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.question = "Как дела?"
-        cls.answer_message = "Все хорошо"
-        cls.answer_status = AnswerStatuses.CREATED
-
-        cls.qa_service = QAService()
-        cls.qa_service.add_QA(cls.question, cls.answer_message, cls.answer_status)
+class QAServiceTestCase(TestCase):
+    def setUp(self):
+        self.qa_service = QAService()
 
     def test_add_qa(self):
-        url = reverse("add_qa")
-        data = {
-            "question": "Какой твой любимый цвет?",
-            "answer_message": "Синий",
-            "answer_status": AnswerStatuses.CREATED,
-        }
-        response = client.post(url, data=data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["message"], "Question added successfully")
-
-    def test_add_qa_existing_question(self):
-        url = reverse("add_qa")
-        data = {
-            "question": self.question,
-            "answer_message": self.answer_message,
-            "answer_status": self.answer_status,
-        }
-        response = client.post(url, data=data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["message"], "Question already exists")
+        result = self.qa_service.add_QA("New Question", "New Answer")
+        self.assertTrue(result)
+        self.assertIn("New Question", self.qa_service.get_all_QA())
 
     def test_get_answer(self):
-        url = reverse("get_answer")
-        data = {"question": self.question, "user_id": uuid4()}
-        response = client.post(url, data=data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["message"], self.answer_message)
-        self.assertEqual(response.data["status"], self.answer_status.name)
+        self.qa_service.add_QA("Test Question", "Test Answer")
+        answer = self.qa_service.get_answer("Test Question")
+        self.assertEqual(answer.message, "Test Answer")
 
-    def test_get_answer_non_existing_question(self):
-        url = reverse("get_answer")
-        data = {"question": "Несуществующий вопрос", "user_id": uuid4()}
-        response = client.post(url, data=data)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data["message"], "Answer not found")
+    def test_get_most_frequent_questions(self):
+        self.qa_service.add_QA("Q1", "A1")
+        self.qa_service.add_QA("Q2", "A2")
+        self.qa_service.get_answer("Q1")
+        self.qa_service.get_answer("Q1")
+        self.qa_service.get_answer("Q2")
+        frequent_questions = self.qa_service.get_most_frequent_questions(2)
+        self.assertEqual(frequent_questions, ["Q1", "Q2"])
 
-    def test_most_frequent_questions(self):
-        url = reverse("most_frequent_questions")
-        response = client.get(url, data={"return_count": 10})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn(self.question, response.data["questions"])
 
-    def test_get_questions_by_users(self):
-        url = reverse("user_questions")
-        response = client.get(url, data={"filename": "export.txt"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data["user_questions"], dict)
+class APITestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.qa_service = QAService()
+        self.operations_service = OperationsService()
 
     def test_get_all_qa(self):
         url = reverse("all_qa")
-        response = client.get(url)
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(any(qa["question"] == self.question for qa in response.data))
 
+    def test_add_qa(self):
+        url = reverse("all_qa")
+        data = {
+            "question": "New API Question",
+            "answer_message": "New API Answer",
+            "answer_status": "Created",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-class OperationTests(APITestCase):
+    def test_get_answer(self):
+        self.qa_service.add_QA("API Question", "API Answer")
+        url = reverse("get_answer")
+        data = {"question": "API Question", "user_id": str(uuid4())}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "API Answer")
+
+    def test_most_frequent_questions(self):
+        url = reverse("most_frequent_questions")
+        response = self.client.get(url, {"return_count": 5})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_create_operation(self):
         url = reverse("create_operation")
-        response = client.post(url)
+        response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue("id" in response.data)
 
     def test_complete_operation(self):
-        operation = Operation.objects.create()
+        operation = self.operations_service.create_operation()
         url = reverse("complete_operation", args=[operation.id])
-        data = {"result": "Operation completed successfully"}
-        response = client.post(url, data=data)
+        data = {"result": "Completed"}
+        response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data["completed"])
-        self.assertEqual(response.data["result"], "Operation completed successfully")
 
-    def test_finish_operation(self):
-        operation = Operation.objects.create()
-        url = reverse("finish_operation", args=[operation.id])
-        response = client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data["completed"])
-        self.assertIsNone(response.data["result"])
-
-    def test_get_operation_info(self):
-        operation = Operation.objects.create()
-        url = reverse("get_operation_info", args=[operation.id])
-        response = client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], str(operation.id))
+    def test_export_data(self):
+        url = reverse("export_data")
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

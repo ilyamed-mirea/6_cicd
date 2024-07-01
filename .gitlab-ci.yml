@@ -1,0 +1,92 @@
+stages:
+    - test
+    - build
+    - deploy
+
+run-unit-tests:
+    stage: test
+    image: python:3.10
+    script:
+        - |
+          pip install pytest
+          pip install -r ./requirements.txt
+        - python -m pytest ./users_support_project/tests/unit_test_applications.py
+
+run-component-tests:
+    stage: test
+    image: python:3.10
+    script:
+        - |
+          pip install pytest
+          pip install gunicorn
+          pip install -r ./requirements.txt
+        - gunicorn --workers=4 -b=0.0.0.0:8000 --chdir=./users_support_project --daemon users_support_project.wsgi:application
+        - sleep 5
+        - python -m pytest ./users_support_project/tests/component_test_applications.py
+
+build-prod-image:
+  stage: build
+  image: docker:dind
+  script:
+    - docker build -t users_support:latest .
+    - docker save users_support:latest > users_support.tar
+  needs:
+    - run-unit-tests
+    - run-component-tests
+  artifacts:
+    when: on_success
+    expire_in: 10s
+    paths:
+     - "users_support.tar"
+
+push-to-dockerhub:
+  stage: deploy
+  image: docker:dind
+  before_script:
+    - docker load --input users_support.tar
+    - docker login -u $DH_USERNAME -p $DH_PASSWORD
+  script:
+    - docker tag users_support:latest $DH_USERNAME/users_support:latest
+    - docker tag users_support:latest $DH_USERNAME/users_support:$CI_PIPELINE_IID
+    - docker push $DH_USERNAME/users_support:latest
+    - docker push $DH_USERNAME/users_support:$CI_PIPELINE_IID
+  needs:
+    - build-prod-image
+
+push-to-yandex-registry:
+  stage: deploy
+  image: docker:dind
+  before_script:
+    - docker load --input users_support.tar
+    - echo $YC_JSON_KEY | docker login -u json_key --password-stdin cr.yandex
+  script:
+    - docker tag users_support:latest cr.yandex/$YC_CR_ID/users_support:latest
+    - docker tag users_support:latest cr.yandex/$YC_CR_ID/users_support:$CI_PIPELINE_IID
+    - docker push cr.yandex/$YC_CR_ID/users_support:latest
+    - docker push cr.yandex/$YC_CR_ID/users_support:$CI_PIPELINE_IID
+  needs:
+    - build-prod-image
+
+deploy-to-yandex:
+  stage: deploy
+  image: ubuntu
+  before_script:
+    - echo $YC_JSON_KEY > key.json
+    - apt-get update && apt-get install curl -y
+    - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -a
+    - /opt/yc/bin/yc config profile create sa-profile
+    - /opt/yc/bin/yc config set service-account-key key.json
+    - /opt/yc/bin/yc config set cloud-id $YC_CLOUD_ID
+    - /opt/yc/bin/yc config set folder-id $YC_FOLDER_ID
+  script:
+    - |
+      /opt/yc/bin/yc serverless container revision deploy \
+      --container-name $YC_CONTAINER_NAME \
+      --image cr.yandex/$YC_CR_ID/users_support:latest \
+      --service-account-id $YC_SA_ID \
+      --execution-timeout 30s \
+      --cores 1 \
+      --memory 1GB \
+      --concurrency 1
+  needs:
+    - push-to-yandex-registry
