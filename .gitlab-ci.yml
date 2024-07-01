@@ -1,9 +1,9 @@
 stages:
     - test
-    # - build
+    - build
     # - deploy
 
-run-unit-tests:
+run-tests:
     stage: test
     image: python:3.10
     script:
@@ -11,20 +11,19 @@ run-unit-tests:
         - pip install -r ./requirements.txt
         - python manage.py test
 
-# build-prod-image:
-#   stage: build
-#   image: docker:dind
-#   script:
-#     - docker build -t help_students:latest .
-#     - docker save help_students:latest > help_students.tar
-#   needs:
-#     - run-unit-tests
-#     - run-component-tests
-#   artifacts:
-#     when: on_success
-#     expire_in: 10s
-#     paths:
-#      - "help_students.tar"
+build-prod-image:
+  stage: build
+  image: docker:dind
+  script:
+    - docker build -t help_students:latest .
+    - docker save help_students:latest > help_students.tar
+  needs:
+    - run-tests
+  artifacts:
+    when: on_success
+    expire_in: 10s
+    paths:
+     - "help_students.tar"
 
 # push-to-dockerhub:
 #   stage: deploy
