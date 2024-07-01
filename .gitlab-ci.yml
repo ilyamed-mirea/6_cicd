@@ -53,26 +53,26 @@ push-to-yandex-registry:
   needs:
     - build-prod-image
 
-# deploy-to-yandex:
-#   stage: deploy
-#   image: ubuntu
-#   before_script:
-#     - echo $YC_JSON_KEY > key.json
-#     - apt-get update && apt-get install curl -y
-#     - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -a
-#     - /opt/yc/bin/yc config profile create sa-profile
-#     - /opt/yc/bin/yc config set service-account-key key.json
-#     - /opt/yc/bin/yc config set cloud-id $YC_CLOUD_ID
-#     - /opt/yc/bin/yc config set folder-id $YC_FOLDER_ID
-#   script:
-#     - |
-#       /opt/yc/bin/yc serverless container revision deploy \
-#       --container-name $YC_CONTAINER_NAME \
-#       --image cr.yandex/$YC_CR_ID/help_students:latest \
-#       --service-account-id $YC_SA_ID \
-#       --execution-timeout 30s \
-#       --cores 1 \
-#       --memory 1GB \
-#       --concurrency 1
-#   needs:
-#     - push-to-yandex-registry
+deploy-to-yandex:
+  stage: deploy
+  image: ubuntu
+  before_script:
+    - echo $YC_JSON_KEY > key.json
+    - apt-get update && apt-get install curl -y
+    - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -a
+    - /opt/yc/bin/yc config profile create sa-profile
+    - /opt/yc/bin/yc config set service-account-key key.json
+    - /opt/yc/bin/yc config set cloud-id $YC_CLOUD_ID
+    - /opt/yc/bin/yc config set folder-id $YC_FOLDER_ID
+  script:
+    - |
+      /opt/yc/bin/yc serverless container revision deploy \
+      --container-name $YC_CONTAINER_NAME \
+      --image cr.yandex/$YC_CR_ID/help_students:latest \
+      --service-account-id $YC_SA_ID \
+      --execution-timeout 30s \
+      --cores 1 \
+      --memory 1GB \
+      --concurrency 1
+  needs:
+    - push-to-yandex-registry
