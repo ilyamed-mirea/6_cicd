@@ -31,36 +31,42 @@ from app.views import (
 )
 
 urlpatterns = [
-    path("all_qa/", GetAllQAView.as_view(), name="all_qa"),
-    path("add_qa/", AddQAView.as_view(), name="add_qa"),
-    path("get_answer/", GetAnswerView.as_view(), name="get_answer"),
+    path("all_qa/", GetAllQAView.as_view({"get": "list"}), name="all_qa"),
+    path("add_qa/", AddQAView.as_view({"post": "create"}), name="add_qa"),
+    path("get_answer/", GetAnswerView.as_view({"post": "create"}), name="get_answer"),
     path(
-        "stats/most_frequent/",
-        MostFrequentQuestionsView.as_view(),
+        "most_frequent_questions/",
+        MostFrequentQuestionsView.as_view({"get": "list"}),
         name="most_frequent_questions",
     ),
     path(
-        "stats/user_questions/",
-        GetQuestionsByUsersView.as_view(),
-        name="user_questions",
+        "get_questions_by_users/",
+        GetQuestionsByUsersView.as_view({"get": "list"}),
+        name="get_questions_by_users",
     ),
-    path("operations/", CreateOperationView.as_view(), name="create_operation"),
     path(
-        "operations/<uuid:operation_id>/complete/",
-        CompleteOperationView.as_view(),
+        "create_operation/",
+        CreateOperationView.as_view({"post": "create"}),
+        name="create_operation",
+    ),
+    path(
+        "complete_operation/<int:operation_id>/",
+        CompleteOperationView.as_view({"post": "create"}),
         name="complete_operation",
     ),
     path(
-        "operations/<uuid:operation_id>/finish/",
-        FinishOperationView.as_view(),
+        "finish_operation/<int:operation_id>/",
+        FinishOperationView.as_view({"post": "create"}),
         name="finish_operation",
     ),
     path(
-        "operations/<uuid:operation_id>/",
-        GetOperationInfoView.as_view(),
+        "get_operation_info/<int:operation_id>/",
+        GetOperationInfoView.as_view({"get": "list"}),
         name="get_operation_info",
     ),
-    path("operations/export_data/", ExportDataView.as_view(), name="export_data"),
+    path(
+        "export_data/", ExportDataView.as_view({"post": "create"}), name="export_data"
+    ),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
 ]

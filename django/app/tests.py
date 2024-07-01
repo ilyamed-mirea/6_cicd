@@ -13,20 +13,16 @@ class QuestionAnswerTestCase(APITestCase):
     def setUpTestData(cls):
         cls.question = "Как дела?"
         cls.answer_message = "Все хорошо"
-        cls.answer_file = "example.jpg"
         cls.answer_status = AnswerStatuses.CREATED
 
         cls.qa_service = QAService()
-        cls.qa_service.add_QA(
-            cls.question, cls.answer_message, cls.answer_file, cls.answer_status
-        )
+        cls.qa_service.add_QA(cls.question, cls.answer_message, cls.answer_status)
 
     def test_add_qa(self):
         url = reverse("add_qa")
         data = {
             "question": "Какой твой любимый цвет?",
             "answer_message": "Синий",
-            "answer_file": None,
             "answer_status": AnswerStatuses.CREATED,
         }
         response = client.post(url, data=data)
@@ -38,7 +34,6 @@ class QuestionAnswerTestCase(APITestCase):
         data = {
             "question": self.question,
             "answer_message": self.answer_message,
-            "answer_file": self.answer_file,
             "answer_status": self.answer_status,
         }
         response = client.post(url, data=data)
@@ -51,7 +46,6 @@ class QuestionAnswerTestCase(APITestCase):
         response = client.post(url, data=data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["message"], self.answer_message)
-        self.assertEqual(response.data["file"], self.answer_file)
         self.assertEqual(response.data["status"], self.answer_status.name)
 
     def test_get_answer_non_existing_question(self):

@@ -15,26 +15,27 @@ class Answer:
     id: UUID
     creation_date: datetime
     message: str
-    file: str | None
     status: AnswerStatuses
 
     def __init__(
         self,
         message: str,
-        file: str | None = None,
         status=AnswerStatuses.CREATED,
     ) -> None:
         self.id = uuid4()
         self.creation_date = datetime.now()
         self.message = message
-        self.file = file
         self.status = status
 
 
 class Operation(models.Model):
-    def __init__(self, id: UUID, result: bool = False) -> None:
-        self.id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-        self.created_at = models.DateTimeField(auto_now_add=True)
-        self.updated_at = models.DateTimeField(auto_now=True)
-        self.completed = models.BooleanField(default=False)
-        self.result = models.TextField(null=True, blank=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed = models.BooleanField(default=False)
+    result = models.TextField(null=True, blank=True)
+
+    def init(self, result: bool = False) -> None:
+        super().init()
+        self.id = uuid.uuid4()
+        self.result = result

@@ -36,12 +36,11 @@ class QAService:
         self,
         question: str,
         answer_message: str,
-        answer_file: Optional[str] = None,
         answer_status: Optional[str] = None,
     ) -> bool:
         if question in self._QA:
             return False
-        self._QA[question] = Answer(answer_message, answer_file, answer_status)
+        self._QA[question] = Answer(answer_message, answer_status)
         return True
 
     def get_answer(self, question: str, user_id: UUID = "test") -> Answer:

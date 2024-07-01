@@ -19,24 +19,24 @@ qa_service = QAService()
 
 
 @extend_schema_view(
-    get=extend_schema(
+    list=extend_schema(
         summary="Получить все вопросы и ответы",
         description="Возвращает все вопросы и ответы в базе данных.",
         responses={200: "application/json"},
     )
 )
 class GetAllQAView(ViewSet):
-    def get(self, request):
-        qa_data = qa_service.get_all_qa()
+    def list(self, request):
+        qa_data = qa_service.get_all_QA()
         serialized_data = [
-            {"question": question, "answer": answer}
+            {"question": question, "answer": answer.message}
             for question, answer in qa_data.items()
         ]
         return Response(serialized_data)
 
 
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Добавить новый вопрос и ответ",
         description="Добавляет новый вопрос и ответ в базу данных.",
         request=AddQASerializer,
@@ -47,14 +47,13 @@ class GetAllQAView(ViewSet):
     )
 )
 class AddQAView(ViewSet):
-    def post(self, request):
+    def create(self, request):
         serializer = AddQASerializer(data=request.data)
         if serializer.is_valid():
             validated_data = serializer.validated_data
             success = qa_service.add_QA(
                 validated_data["question"],
                 validated_data["answer_message"],
-                validated_data.get("answer_file"),
                 validated_data["answer_status"],
             )
             if success:
@@ -71,7 +70,7 @@ class AddQAView(ViewSet):
 
 
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Получить ответ на вопрос",
         description="Возвращает ответ на заданный вопрос для конкретного пользователя.",
         request=GetAnswerSerializer,
@@ -83,7 +82,7 @@ class AddQAView(ViewSet):
     )
 )
 class GetAnswerView(ViewSet):
-    def post(self, request):
+    def create(self, request):
         serializer = GetAnswerSerializer(data=request.data)
         if serializer.is_valid():
             validated_data = serializer.validated_data
@@ -94,7 +93,6 @@ class GetAnswerView(ViewSet):
                 return Response(
                     {
                         "message": answer.message,
-                        "file": answer.file,
                         "status": answer.status.name,
                     }
                 )
@@ -106,14 +104,14 @@ class GetAnswerView(ViewSet):
 
 
 @extend_schema_view(
-    get=extend_schema(
+    list=extend_schema(
         summary="Получить наиболее часто задаваемые вопросы",
         description="Возвращает наиболее часто задаваемые вопросы.",
         responses={200: "application/json"},
     )
 )
 class MostFrequentQuestionsView(ViewSet):
-    def get(self, request):
+    def list(self, request):
         serializer = MostFrequentQuestionsSerializer(data=request.query_params)
         if serializer.is_valid():
             return_count = serializer.validated_data["return_count"]
@@ -123,14 +121,14 @@ class MostFrequentQuestionsView(ViewSet):
 
 
 @extend_schema_view(
-    get=extend_schema(
+    list=extend_schema(
         summary="Получить вопросы по пользователям",
         description="Возвращает вопросы, заданные пользователями в заданном файле.",
         responses={200: "application/json"},
     )
 )
 class GetQuestionsByUsersView(ViewSet):
-    def get(self, request):
+    def list(self, request):
         serializer = GetQuestionsByUsersSerializer(data=request.query_params)
         if serializer.is_valid():
             filename = serializer.validated_data["filename"]
@@ -143,21 +141,21 @@ operation_service = OperationsService()
 
 
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Создание новой операции",
         description="Создает новую операцию и возвращает ее данные.",
         responses={201: OperationSerializer},
     )
 )
 class CreateOperationView(ViewSet):
-    def post(self, request):
+    def create(self, request):
         operation = operation_service.create_operation()
         serializer = OperationSerializer(operation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Завершение операции",
         description="Завершает указанную операцию с предоставленным результатом.",
         request={"result": "string"},
@@ -168,7 +166,7 @@ class CreateOperationView(ViewSet):
     )
 )
 class CompleteOperationView(ViewSet):
-    def post(self, request, operation_id):
+    def create(self, request, operation_id):
         result = request.data.get("result", "")
         operation = operation_service.complete_operation(operation_id, result)
         if operation:
@@ -180,7 +178,7 @@ class CompleteOperationView(ViewSet):
 
 
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Завершение операции без результата",
         description="Завершает указанную операцию без предоставления результата.",
         responses={
@@ -190,7 +188,7 @@ class CompleteOperationView(ViewSet):
     )
 )
 class FinishOperationView(ViewSet):
-    def post(self, request, operation_id):
+    def create(self, request, operation_id):
         operation = operation_service.finish_operation(operation_id)
         if operation:
             serializer = OperationSerializer(operation)
@@ -201,7 +199,7 @@ class FinishOperationView(ViewSet):
 
 
 @extend_schema_view(
-    get=extend_schema(
+    list=extend_schema(
         summary="Получить информацию об операции",
         description="Возвращает информацию о конкретной операции.",
         responses={
@@ -211,7 +209,7 @@ class FinishOperationView(ViewSet):
     )
 )
 class GetOperationInfoView(ViewSet):
-    def get(self, request, operation_id):
+    def list(self, request, operation_id):
         operation = operation_service.get_operation_info(operation_id)
         if operation:
             serializer = OperationSerializer(operation)
@@ -222,7 +220,7 @@ class GetOperationInfoView(ViewSet):
 
 
 @extend_schema_view(
-    post=extend_schema(
+    create=extend_schema(
         summary="Экспорт данных",
         description="Запускает процесс экспорта данных.",
         responses={
@@ -231,7 +229,7 @@ class GetOperationInfoView(ViewSet):
     )
 )
 class ExportDataView(ViewSet):
-    def post(self, request):
+    def create(self, request):
         operation = qa_service.export_data()
         serializer = OperationSerializer(operation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

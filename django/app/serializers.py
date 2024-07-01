@@ -19,14 +19,12 @@ class QuestionAnswerSerializer(serializers.Serializer):
 class AddQASerializer(serializers.Serializer):
     question = serializers.CharField()
     answer_message = serializers.CharField()
-    answer_file = serializers.FilePathField(required=False)
     answer_status = EnumField(choices=AnswerStatuses)
 
     def create(self, validated_data):
         return Answer(
             validated_data["question"],
             validated_data["answer_message"],
-            validated_data["answer_file"],
             validated_data["answer_status"],
         )
 
@@ -44,7 +42,8 @@ class GetQuestionsByUsersSerializer(serializers.Serializer):
     filename = serializers.CharField()
 
 
-class OperationSerializer(serializers.ModelSerializer):
+class OperationSerializer(serializers.Serializer):
     class Meta:
         model = Operation
         fields = ["id", "created_at", "updated_at", "completed", "result"]
+        read_only_fields = ["id", "created_at", "updated_at"]
