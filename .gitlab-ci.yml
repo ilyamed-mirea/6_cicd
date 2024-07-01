@@ -1,78 +1,79 @@
 stages:
     - test
-    - build
-    - deploy
+    # - build
+    # - deploy
 
 run-unit-tests:
     stage: test
     image: python:3.10
     script:
+        - cd django
         - pip install -r ./requirements.txt
         - python manage.py test
 
-build-prod-image:
-  stage: build
-  image: docker:dind
-  script:
-    - docker build -t help_students:latest .
-    - docker save help_students:latest > help_students.tar
-  needs:
-    - run-unit-tests
-    - run-component-tests
-  artifacts:
-    when: on_success
-    expire_in: 10s
-    paths:
-     - "help_students.tar"
+# build-prod-image:
+#   stage: build
+#   image: docker:dind
+#   script:
+#     - docker build -t help_students:latest .
+#     - docker save help_students:latest > help_students.tar
+#   needs:
+#     - run-unit-tests
+#     - run-component-tests
+#   artifacts:
+#     when: on_success
+#     expire_in: 10s
+#     paths:
+#      - "help_students.tar"
 
-push-to-dockerhub:
-  stage: deploy
-  image: docker:dind
-  before_script:
-    - docker load --input help_students.tar
-    - docker login -u $DH_USERNAME -p $DH_PASSWORD
-  script:
-    - docker tag help_students:latest $DH_USERNAME/help_students:latest
-    - docker tag help_students:latest $DH_USERNAME/help_students:$CI_PIPELINE_IID
-    - docker push $DH_USERNAME/help_students:latest
-    - docker push $DH_USERNAME/help_students:$CI_PIPELINE_IID
-  needs:
-    - build-prod-image
+# push-to-dockerhub:
+#   stage: deploy
+#   image: docker:dind
+#   before_script:
+#     - docker load --input help_students.tar
+#     - docker login -u $DH_USERNAME -p $DH_PASSWORD
+#   script:
+#     - docker tag help_students:latest $DH_USERNAME/help_students:latest
+#     - docker tag help_students:latest $DH_USERNAME/help_students:$CI_PIPELINE_IID
+#     - docker push $DH_USERNAME/help_students:latest
+#     - docker push $DH_USERNAME/help_students:$CI_PIPELINE_IID
+#   needs:
+#     - build-prod-image
 
-push-to-yandex-registry:
-  stage: deploy
-  image: docker:dind
-  before_script:
-    - docker load --input help_students.tar
-    - echo $YC_JSON_KEY | docker login -u json_key --password-stdin cr.yandex
-  script:
-    - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:latest
-    - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
-    - docker push cr.yandex/$YC_CR_ID/help_students:latest
-    - docker push cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
-  needs:
-    - build-prod-image
+# push-to-yandex-registry:
+#   stage: deploy
+#   image: docker:dind
+#   before_script:
+#     - docker load --input help_students.tar
+#     - echo $YC_JSON_KEY | docker login -u json_key --password-stdin cr.yandex
+#   script:
+#     - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:latest
+#     - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
+#     - docker push cr.yandex/$YC_CR_ID/help_students:latest
+#     - docker push cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
+#   needs:
+#     - build-prod-image
 
-deploy-to-yandex:
-  stage: deploy
-  image: ubuntu
-  before_script:
-    - echo $YC_JSON_KEY > key.json
-    - apt-get update && apt-get install curl -y
-    - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -a
-    - /opt/yc/bin/yc config profile create sa-profile
-    - /opt/yc/bin/yc config set service-account-key key.json
-    - /opt/yc/bin/yc config set cloud-id $YC_CLOUD_ID
-    - /opt/yc/bin/yc config set folder-id $YC_FOLDER_ID
-  script:
-    - |
-      /opt/yc/bin/yc serverless container revision deploy \
-      --container-name $YC_CONTAINER_NAME \
-      --image cr.yandex/$YC_CR_ID/help_students:latest \
-      --service-account-id $YC_SA_ID \
-      --execution-timeout 30s \
-      --cores 1 \
-      --memory 1GB \
-      --concurrency 1
-  needs:
-    - push-to-yandex-registry
+# deploy-to-yandex:
+#   stage: deploy
+#   image: ubuntu
+#   before_script:
+#     - echo $YC_JSON_KEY > key.json
+#     - apt-get update && apt-get install curl -y
+#     - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -a
+#     - /opt/yc/bin/yc config profile create sa-profile
+#     - /opt/yc/bin/yc config set service-account-key key.json
+#     - /opt/yc/bin/yc config set cloud-id $YC_CLOUD_ID
+#     - /opt/yc/bin/yc config set folder-id $YC_FOLDER_ID
+#   script:
+#     - |
+#       /opt/yc/bin/yc serverless container revision deploy \
+#       --container-name $YC_CONTAINER_NAME \
+#       --image cr.yandex/$YC_CR_ID/help_students:latest \
+#       --service-account-id $YC_SA_ID \
+#       --execution-timeout 30s \
+#       --cores 1 \
+#       --memory 1GB \
+#       --concurrency 1
+#   needs:
+#     - push-to-yandex-registry
