@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
     # ports:
-    #   - 8002:8000  
+    #   - 8002:8080  
     # volumes:
       # - ./django/static:volumes/reports:/app/applications/static/reports
     restart: always
