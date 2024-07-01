@@ -39,19 +39,19 @@ push-to-dockerhub:
   needs:
     - build-prod-image
 
-# push-to-yandex-registry:
-#   stage: deploy
-#   image: docker:dind
-#   before_script:
-#     - docker load --input help_students.tar
-#     - echo $YC_JSON_KEY | docker login -u json_key --password-stdin cr.yandex
-#   script:
-#     - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:latest
-#     - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
-#     - docker push cr.yandex/$YC_CR_ID/help_students:latest
-#     - docker push cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
-#   needs:
-#     - build-prod-image
+push-to-yandex-registry:
+  stage: deploy
+  image: docker:dind
+  before_script:
+    - docker load --input help_students.tar
+    - echo $YC_JSON_KEY | docker login -u json_key --password-stdin cr.yandex
+  script:
+    - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:latest
+    - docker tag help_students:latest cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
+    - docker push cr.yandex/$YC_CR_ID/help_students:latest
+    - docker push cr.yandex/$YC_CR_ID/help_students:$CI_PIPELINE_IID
+  needs:
+    - build-prod-image
 
 # deploy-to-yandex:
 #   stage: deploy
