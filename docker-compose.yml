@@ -1,0 +1,24 @@
+version: '3'
+name: help_stud
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # ports:
+    #   - 8002:8080  
+    # volumes:
+      # - ./django/static:volumes/reports:/app/applications/static/reports
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      # - ./django/static:/opt/static
+    ports:
+      - 8003:80
+    depends_on:
+      - backend
+    restart: always
